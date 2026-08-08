@@ -15,7 +15,7 @@ export function GameItem({ game }: { game: Game }) {
       <div className="game-title">
         <Link href={`/game/${slugify(game.name)}`}>{game.name}</Link>
       </div>
-      <ul className="list-inline">
+      <ul className="game-links">
         {game.links.map((link) => (
           <li key={link}>
             <a href="#">{link}</a>

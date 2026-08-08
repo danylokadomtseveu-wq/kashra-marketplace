@@ -1,0 +1,163 @@
+# Production compose для Linux VPS. Использование:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --scale api=3
+# Требует: .env.production (см. .env.production.example), Docker + Compose v2 на сервере.
+name: marketplace-prod
+
+x-api-defaults: &api-defaults
+  image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-yourorg}/marketplace-api:${IMAGE_TAG:-latest}
+  env_file:
+    - .env.production
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/v1/health/live || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 15s
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    # НЕ публикуем 5432 наружу — доступ только из внутренней сети compose
+    expose:
+      - "5432"
+    shm_size: 256mb
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory ${REDIS_MAXMEMORY:-512mb}
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    expose:
+      - "6379"
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    expose:
+      - "9000"
+      - "9001"
+
+  # Горизонтальное масштабирование: docker compose ... up --scale api=3
+  api:
+    <<: *api-defaults
+    # CPU/mem лимиты: задаются в .env.production
+    deploy:
+      resources:
+        limits:
+          cpus: "${API_CPUS:-1.0}"
+          memory: "${API_MEMORY:-512M}"
+
+  worker:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-yourorg}/marketplace-worker:${IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "${WORKER_CPUS:-1.0}"
+          memory: "${WORKER_MEMORY:-512M}"
+
+  web:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-yourorg}/marketplace-web:${IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # nginx — единственная точка входа в интернет (80/443), reverse proxy на api+web
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/snippets:/etc/nginx/snippets:ro
+      - certs:/etc/nginx/certs
+    depends_on:
+      - api
+      - web
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # Выполнение миграций при деплое: docker compose ... run --rm migrate
+  migrate:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-yourorg}/marketplace-api:${IMAGE_TAG:-latest}
+    env_file:
+      - .env.production
+    command: sh -c "cd apps/api && npx prisma migrate deploy"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    profiles: ["migrate"]
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  certs:
+
+networks:
+  default:
+    name: marketplace-prod-net
+    driver: bridge
+    # Внутренние сети докера уже изолируют; для публичных портов — только nginx

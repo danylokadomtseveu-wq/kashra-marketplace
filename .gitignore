@@ -1,0 +1,15 @@
+node_modules
+dist
+/Kashra/
+/Kashra-deepseek-backup/
+/ai-gov-assistant/
+build
+.next
+.env
+.env.local
+.env.*.local
+!.env.example
+*.log
+coverage
+.DS_Store
+/tmp

@@ -21,22 +21,16 @@ body:has(.kashra-home) .navbar .container-fluid {
 
 body:has(.kashra-home) .brand-logo,
 body:has(.kashra-home) .navbar-nav > li > a,
-body:has(.kashra-home) .nav-item a {
-  color: #eef1f5;
-}
-
+body:has(.kashra-home) .nav-item a { color: #eef1f5; }
 body:has(.kashra-home) .navbar-nav > li > a,
 body:has(.kashra-home) .nav-item a { opacity: .72; }
-
 body:has(.kashra-home) .navbar-nav > li > a:hover,
 body:has(.kashra-home) .nav-item a:hover { opacity: 1; color: #fff; }
-
 body:has(.kashra-home) .search-input {
   color: #eef1f5;
   background: #111318;
   border-color: #292e36;
 }
-
 body:has(.kashra-home) .search-input::placeholder { color: #747c87; }
 body:has(.kashra-home) .post-search .btn { color: #858d99; }
 
@@ -135,10 +129,7 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   letter-spacing: -.7px;
 }
 
-.catalog-caption {
-  color: #6e7682;
-  font-size: 13px;
-}
+.catalog-caption { color: #6e7682; font-size: 13px; }
 
 /* ---------- Quick access: text only ---------- */
 .kashra-directory .promo-cats {
@@ -150,8 +141,7 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   border-top: 1px solid #20242a;
 }
 
-.kashra-directory .promo-cats-label,
-.kashra-directory .promo-game-list-header {
+.kashra-directory .promo-cats-label {
   flex: 0 0 52px;
   width: 52px;
   color: #626b77;
@@ -181,11 +171,42 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   font-weight: 650;
 }
 
+/* Two links per line here as well; no separator characters. */
 .kashra-directory .promo-cat-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+  row-gap: 3px;
+  width: 100%;
+  min-width: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
   color: #9ba3ae;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.55;
+}
+
+.kashra-directory .promo-cat-links li {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.kashra-directory .promo-cat-links a {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  color: #9ba3ae;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.kashra-directory .promo-cat-links a:hover {
+  color: #d2d7df;
+  text-decoration: underline;
 }
 
 /* ---------- Alphabet catalog ---------- */
@@ -266,7 +287,7 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 14px;
-  row-gap: 3px;
+  row-gap: 4px;
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -300,7 +321,7 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   text-decoration: underline;
 }
 
-/* Never allow a game or its text to expand the 4-column grid. */
+/* Hard layout guard: content can never widen its grid column. */
 .kashra-home .game-row > *,
 .kashra-home .game-cell,
 .kashra-home .promo-game-item,
@@ -336,5 +357,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   .kashra-catalog-section .promo-game-list { margin-left: 12px; }
   .kashra-directory .cat-grid { grid-template-columns: 1fr; }
   .kashra-catalog-section .game-row { grid-template-columns: 1fr; }
-  .kashra-catalog-section .game-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kashra-catalog-section .game-links,
+  .kashra-directory .promo-cat-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

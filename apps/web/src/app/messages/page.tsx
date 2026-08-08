@@ -1,0 +1,2 @@
+import Link from "next/link"
+export default function MessagesPage(){return <div><div className="page-header"><div><div className="page-kicker">KASHRA</div><h1 className="page-title">Сообщения</h1></div></div><div className="message-list"><div className="message-row"><div><div className="message-title">Пока нет сообщений</div><div className="message-meta">Переписка с продавцами появится здесь после первого заказа.</div></div><Link href="/catalog" className="cat-tab">Найти товар</Link></div></div></div>}

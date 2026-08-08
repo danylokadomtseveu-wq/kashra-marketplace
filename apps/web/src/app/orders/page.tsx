@@ -1,20 +1,5 @@
-export default function OrdersPage() {
-  return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">Мои заказы</h1>
-      </div>
-      <div style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        textAlign: "center",
-        padding: 60,
-        color: "var(--text-3)",
-      }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
-        <p style={{ fontSize: 14 }}>У вас пока нет заказов</p>
-      </div>
-    </div>
-  )
-}
+"use client"
+import Link from "next/link"
+import { useEffect,useState } from "react"
+type Item={id:string;title:string;price:string;qty:number};type Order={id:string;date:string;total:number;items:Item[]}
+export default function OrdersPage(){const[orders,setOrders]=useState<Order[]>([]);const[cart,setCart]=useState<Item[]>([]);useEffect(()=>{setOrders(JSON.parse(localStorage.getItem("kashra-orders")??"[]"));setCart(JSON.parse(localStorage.getItem("kashra-cart")??"[]"))},[]);function checkout(){if(!cart.length)return;const order={id:`KSH-${Date.now().toString().slice(-8)}`,date:new Date().toLocaleString("ru-RU"),total:cart.reduce((s,x)=>s+Number(x.price)*x.qty,0),items:cart};const next=[order,...orders];localStorage.setItem("kashra-orders",JSON.stringify(next));localStorage.removeItem("kashra-cart");setOrders(next);setCart([])}return <div><div className="page-header"><div><div className="page-kicker">KASHRA</div><h1 className="page-title">Покупки</h1></div>{cart.length>0&&<button className="buy-btn" onClick={checkout}>Оформить заказ из корзины</button>}</div>{orders.length===0?<div className="empty-state"><div className="empty-state-title">Заказов пока нет</div><div>Добавь товар в корзину и оформи первый заказ.</div><Link href="/catalog" className="empty-state-link">Открыть каталог</Link></div>:<div className="message-list">{orders.map(o=><div className="message-row" key={o.id}><div><div className="message-title">{o.id}</div><div className="message-meta">{o.date} · {o.items.length} товар(а)</div></div><strong>{o.total.toLocaleString("ru-RU")} ₽</strong></div>)}</div>}</div>}

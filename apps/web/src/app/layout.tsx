@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { Header } from "@/components/Header"
 import { Footer } from "@/components/Footer"
 import "./globals.css"
+import "./kashra-home.css"
 
 export const metadata = {
   title: "KASHRA — Маркетплейс игровых товаров",

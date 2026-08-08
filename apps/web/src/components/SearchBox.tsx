@@ -10,19 +10,20 @@ export function SearchBox() {
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const query = q.trim()
-    if (query) router.push(`/catalog?query=${encodeURIComponent(query)}`)
+    router.push(query ? `/search?q=${encodeURIComponent(query)}` : "/search")
   }
 
   return (
     <form className="post-search navbar-left" onSubmit={onSubmit} role="search">
       <div className="form-group">
         <input
-          type="text"
+          type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="form-control search-input"
-          placeholder="Поиск по 120 играм"
+          placeholder="Поиск по играм и товарам"
           autoComplete="off"
+          aria-label="Поиск"
         />
       </div>
       <button type="submit" className="btn btn-link" aria-label="Найти">

@@ -7,7 +7,7 @@ const FEATURED = GAMES.slice(0, 8)
 
 export default async function HomePage() {
   return (
-    <main className="kashra-home">
+    <div className="kashra-home">
       <section className="kashra-hero">
         <div className="kashra-hero-copy">
           <div className="kashra-eyebrow">KASHRA MARKETPLACE</div>
@@ -70,6 +70,6 @@ export default async function HomePage() {
         </div>
         <GameCatalog />
       </section>
-    </main>
+    </div>
   )
 }

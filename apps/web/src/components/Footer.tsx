@@ -1,14 +1,2 @@
-export function Footer() {
-  return (
-    <footer id="footer" className="footer">
-      <div className="container">
-        <div className="footer-block">
-          <span className="brand-logo-small">KASHRA</span>
-        </div>
-        <div className="footer-block">
-          <span>© 2026 KASHRA. Игровой маркетплейс.</span>
-        </div>
-      </div>
-    </footer>
-  )
-}
+import Link from "next/link"
+export function Footer(){return <footer id="footer" className="footer"><div className="container"><div className="footer-block"><Link href="/" className="brand-logo-small">KASHRA</Link></div><div className="footer-block">© 2026 KASHRA</div><div className="footer-block"><Link href="/catalog">Каталог</Link></div><div className="footer-block"><Link href="/sell">Продать</Link></div><div className="footer-block"><Link href="/messages">Сообщения</Link></div></div></footer>}

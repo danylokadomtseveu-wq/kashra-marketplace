@@ -39,7 +39,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   padding: 42px 0 80px;
 }
 
-/* ---------- Text intro ---------- */
 .kashra-intro {
   max-width: 850px;
   padding: 12px 0 46px;
@@ -108,7 +107,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   font-weight: 650;
 }
 
-/* ---------- Shared text sections ---------- */
 .kashra-directory,
 .kashra-catalog-section { margin-top: 48px; }
 
@@ -131,7 +129,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
 
 .catalog-caption { color: #6e7682; font-size: 13px; }
 
-/* ---------- Quick access: text only ---------- */
 .kashra-directory .promo-cats {
   display: flex;
   align-items: flex-start;
@@ -171,7 +168,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   font-weight: 650;
 }
 
-/* Two links per line here as well; no separator characters. */
 .kashra-directory .promo-cat-links {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -209,7 +205,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   text-decoration: underline;
 }
 
-/* ---------- Alphabet catalog ---------- */
 .kashra-catalog-section .promo-games {
   display: flex;
   align-items: flex-start;
@@ -282,7 +277,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
 .kashra-catalog-section .game-title a { color: #f0f2f5; }
 .kashra-catalog-section .game-title a:hover { color: #fff; }
 
-/* Exactly two category links per row, then the next row. No separators. */
 .kashra-catalog-section .game-links {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -321,7 +315,6 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   text-decoration: underline;
 }
 
-/* Hard layout guard: content can never widen its grid column. */
 .kashra-home .game-row > *,
 .kashra-home .game-cell,
 .kashra-home .promo-game-item,
@@ -329,6 +322,29 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* Clean homepage: the intro and section-title chrome are intentionally removed. */
+.kashra-home-clean {
+  padding-top: 26px;
+}
+
+.kashra-home-clean .kashra-directory,
+.kashra-home-clean .kashra-catalog-section {
+  margin-top: 0;
+}
+
+.kashra-home-clean .kashra-directory .promo-cats {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.kashra-home-clean .kashra-catalog-section {
+  margin-top: 34px;
+}
+
+.kashra-home-clean .kashra-catalog-section .promo-games {
+  padding-top: 24px;
 }
 
 @media (max-width: 1000px) {
@@ -340,17 +356,12 @@ body:has(.kashra-home) .post-search .btn { color: #858d99; }
 
 @media (max-width: 760px) {
   .kashra-home { width: calc(100% - 24px); padding-top: 24px; }
-  .kashra-intro h1 { font-size: 38px; letter-spacing: -1.2px; }
-  .kashra-intro p { font-size: 15px; }
   .kashra-directory .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-left: 20px; }
   .kashra-catalog-section .promo-game-list { margin-left: 20px; }
   .kashra-catalog-section .game-row { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
 }
 
 @media (max-width: 500px) {
-  .kashra-intro h1 { font-size: 32px; }
-  .section-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
-  .kashra-stats { gap: 14px 24px; }
   .kashra-directory .promo-cats-label,
   .kashra-catalog-section .promo-game-list-header { flex-basis: 32px; width: 32px; }
   .kashra-directory .cat-grid,

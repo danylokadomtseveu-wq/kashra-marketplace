@@ -1,0 +1,4 @@
+.cart-list{border-top:1px solid var(--border)}.cart-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft)}
+.sell-form{max-width:620px}.sell-help{color:var(--text-3);font-size:12px;line-height:1.6;margin-top:8px}
+.message-list{border-top:1px solid var(--border)}.message-row{display:flex;justify-content:space-between;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft)}.message-title{color:#fff;font-weight:600}.message-meta{color:var(--text-3);font-size:11px}
+.seller-head{display:flex;align-items:center;gap:14px;padding:25px 0;border-bottom:1px solid var(--border)}.seller-big-avatar{width:54px;height:54px;display:grid;place-items:center;border:1px solid var(--border);border-radius:50%;background:var(--surface);font-weight:700}.seller-name-big{font-size:20px;font-weight:700}.seller-sub{color:var(--text-3);font-size:12px;margin-top:3px}

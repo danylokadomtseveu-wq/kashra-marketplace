@@ -14,53 +14,34 @@ interface CreateOrderInput {
   couponCode?: string
 }
 
+type CartOrderItem = Prisma.CartItemGetPayload<{ include: { product: { include: { inventory: true } } } }>
+
 @Injectable()
 export class OrdersService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly wallet: WalletService,
-    private readonly payments: PaymentService,
-  ) {}
+  constructor(private readonly prisma: PrismaService, private readonly wallet: WalletService, private readonly payments: PaymentService) {}
 
   async create(userId: string, input: CreateOrderInput) {
     const existing = await this.prisma.order.findUnique({ where: { idempotencyKey: input.idempotencyKey }, include: { items: true } })
     if (existing) return existing
+    if (input.productId) return this.createDirectOfferOrder(userId, input)
 
-    if (input.productId) {
-      return this.createDirectOfferOrder(userId, input)
-    }
-
-    const cart = await this.prisma.cart.findUnique({
-      where: { userId },
-      include: { items: { include: { product: { include: { inventory: true } } } } },
-    })
-    if (!cart || cart.items.length === 0) {
-      throw new BadRequestException({ code: "EMPTY_PURCHASE", message: "Выберите предложение для покупки" })
-    }
-
+    const cart = await this.prisma.cart.findUnique({ where: { userId }, include: { items: { include: { product: { include: { inventory: true } } } } } })
+    if (!cart || cart.items.length === 0) throw new BadRequestException({ code: "EMPTY_PURCHASE", message: "Выберите предложение для покупки" })
     const selectedItems = input.itemIds?.length ? cart.items.filter((item) => input.itemIds!.includes(item.id)) : cart.items
     if (selectedItems.length === 0) throw new BadRequestException({ code: "NO_ITEMS", message: "Нет предложений для заказа" })
-
     return this.createFromItems(userId, input, selectedItems)
   }
 
   private async createDirectOfferOrder(userId: string, input: CreateOrderInput) {
-    const product = await this.prisma.product.findUnique({ include: { inventory: true } , where: { id: input.productId! } })
+    const product = await this.prisma.product.findUnique({ where: { id: input.productId! }, include: { inventory: true } })
     if (!product || product.deletedAt) throw new NotFoundException({ code: "PRODUCT_NOT_FOUND", message: "Предложение не найдено" })
     if (product.status !== "ACTIVE") throw new BadRequestException({ code: "PRODUCT_UNAVAILABLE", message: "Предложение больше недоступно" })
-
     const qty = input.qty ?? 1
-    if (!product.inventory || product.inventory.stock - product.inventory.reserved < qty) {
-      throw new BadRequestException({ code: "INSUFFICIENT_STOCK", message: `Предложение «${product.title}» недоступно в нужном количестве` })
-    }
+    if (!product.inventory || product.inventory.stock - product.inventory.reserved < qty) throw new BadRequestException({ code: "INSUFFICIENT_STOCK", message: `Предложение «${product.title}» недоступно в нужном количестве` })
 
     return this.prisma.$transaction(async (tx) => {
-      const inventory = await tx.inventory.update({
-        where: { id: product.inventory!.id },
-        data: { reserved: { increment: qty } },
-      })
+      const inventory = await tx.inventory.update({ where: { id: product.inventory!.id }, data: { reserved: { increment: qty } } })
       if (inventory.reserved > inventory.stock) throw new BadRequestException({ code: "INSUFFICIENT_STOCK", message: "Предложение уже было выкуплено другим пользователем" })
-
       const total = Number(product.price) * qty
       const created = await tx.order.create({
         data: {
@@ -76,15 +57,13 @@ export class OrdersService {
     })
   }
 
-  private async createFromItems(userId: string, input: CreateOrderInput, selectedItems: Array<any>) {
+  private async createFromItems(userId: string, input: CreateOrderInput, selectedItems: CartOrderItem[]) {
     return this.prisma.$transaction(async (tx) => {
       let total = 0
       const firstProduct = selectedItems[0]!.product
       for (const item of selectedItems) {
         const inventory = item.product.inventory
-        if (!inventory || inventory.stock - inventory.reserved < item.qty) {
-          throw new BadRequestException({ code: "INSUFFICIENT_STOCK", message: `Товара «${item.product.title}» недостаточно на складе` })
-        }
+        if (!inventory || inventory.stock - inventory.reserved < item.qty) throw new BadRequestException({ code: "INSUFFICIENT_STOCK", message: `Товара «${item.product.title}» недостаточно на складе` })
         await tx.inventory.update({ where: { id: inventory.id }, data: { reserved: { increment: item.qty } } })
         total += Number(item.product.price) * item.qty
       }
@@ -93,7 +72,7 @@ export class OrdersService {
           userId, status: "PENDING_PAYMENT", total, currency: firstProduct.currency, idempotencyKey: input.idempotencyKey,
           itemsSummary: { itemCount: selectedItems.length, productTitles: selectedItems.slice(0, 3).map((i) => i.product.title) } as Prisma.InputJsonValue,
           items: { create: selectedItems.map((item) => ({ productId: item.productId, variantId: item.variantId, title: item.product.title, price: item.product.price, qty: item.qty })) },
-          reservations: { create: { inventoryId: selectedItems[0]!.product.inventory.id, qty: selectedItems.reduce((sum, i) => sum + i.qty, 0), status: "ACTIVE", expiresAt: new Date(Date.now() + 15 * 60 * 1000) } },
+          reservations: { create: { inventoryId: selectedItems[0]!.product.inventory!.id, qty: selectedItems.reduce((sum, i) => sum + i.qty, 0), status: "ACTIVE", expiresAt: new Date(Date.now() + 15 * 60 * 1000) } },
         },
         include: { items: true, reservations: true },
       })
@@ -122,12 +101,10 @@ export class OrdersService {
     return result
   }
 
-  async listByUser(userId: string) {
-    return this.prisma.order.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { items: { take: 1 } } })
-  }
+  async listByUser(userId: string) { return this.prisma.order.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { items: { take: 1 } } }) }
 
   async confirmReceived(userId: string, orderId: string) {
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id: orderId } })
       if (!order || order.userId !== userId) throw new NotFoundException({ code: "NOT_FOUND", message: "Заказ не найден" })
       if (order.status !== "DELIVERED") throw new BadRequestException({ code: "INVALID_STATUS", message: "Заказ ещё не доставлен" })
@@ -138,11 +115,10 @@ export class OrdersService {
       await tx.outboxEvent.create({ data: { eventType: "order.completed", payload: { orderId: order.id, userId } as Prisma.InputJsonValue } })
       return updated
     })
-    return result
   }
 
   async cancel(userId: string, orderId: string) {
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id: orderId } })
       if (!order || order.userId !== userId) throw new NotFoundException({ code: "NOT_FOUND", message: "Заказ не найден" })
       if (!["PENDING_PAYMENT", "PAID"].includes(order.status)) throw new BadRequestException({ code: "CANNOT_CANCEL", message: "Нельзя отменить заказ в текущем статусе" })
@@ -157,6 +133,5 @@ export class OrdersService {
       await tx.outboxEvent.create({ data: { eventType: "order.cancelled", payload: { orderId: order.id, userId } as Prisma.InputJsonValue } })
       return updated
     })
-    return result
   }
 }

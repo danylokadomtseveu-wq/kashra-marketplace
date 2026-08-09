@@ -60,6 +60,7 @@ export class SellersService {
       include: {
         category: { select: { id: true, name: true } },
         inventory: { select: { stock: true, reserved: true } },
+        images: { orderBy: { sort: "asc" } },
       },
     })
   }

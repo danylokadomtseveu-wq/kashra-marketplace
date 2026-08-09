@@ -1,13 +1,61 @@
 import Link from "next/link"
-const KNOWN:Record<string,{title:string;items:string[]}>= {
-  "cs2":{title:"Counter-Strike 2",items:["Аккаунты","Prime статус","Скины","Предметы","Бустинг","Коучинг","Прочее"]},
-  "dota-2":{title:"Dota 2",items:["Аккаунты","Буст MMR","Калибровка","Предметы","Услуги"]},
-  "valorant":{title:"Valorant",items:["Аккаунты","Буст рейтинга","Боевой пропуск","Скины","Коучинг","Прочее"]},
-  "minecraft":{title:"Minecraft",items:["Аккаунты","Монеты","Предметы","Услуги"]},
-  "fortnite":{title:"Fortnite",items:["Аккаунты","V-Bucks","Скины","Услуги"]},
-  "gta-5":{title:"GTA V",items:["Аккаунты","Деньги","Предметы","Услуги","Прочее"]},
-  "rust":{title:"Rust",items:["Аккаунты","Предметы","Скины","Услуги","Прочее"]}
+import { ProductRow } from "@/components/ProductRow"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"
+
+async function fetchCategory(slug: string) {
+  try {
+    const res = await fetch(`${API_URL}/categories/${slug}`, { next: { revalidate: 300 } })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
 }
-function pretty(s:string){return s.split("-").filter(Boolean).join(" ").replace(/\b\w/g,c=>c.toUpperCase())}
-function slug(s:string){return s.toLowerCase().replace(/[^a-z0-9а-яё]+/gi,"-").replace(/^-+|-+$/g,"")}
-export default async function GamePage({params}:{params:Promise<{slug:string}>}){const{slug:gameSlug}=await params;const game=KNOWN[gameSlug]??{title:pretty(gameSlug),items:["Аккаунты","Предметы","Услуги","Прочее"]};const lots=Array.from({length:12},(_,i)=>({id:`${gameSlug}-all-${i+1}`,seller:`KashraSeller${i+1}`,title:`${game.title} — предложение #${i+1}`,price:700+i*350,stock:2+(i%8)}));return <div><div className="breadcrumb"><Link href="/">Главная</Link><span className="breadcrumb-sep">/</span><Link href="/catalog">Все игры</Link><span className="breadcrumb-sep">/</span><span>{game.title}</span></div><div className="page-header"><div><div className="page-kicker">ИГРА</div><h1 className="page-title">{game.title}</h1></div><div className="cat-tabs"><Link href={`/game/${gameSlug}`} className="cat-tab active">Все</Link>{game.items.slice(0,5).map(x=><Link key={x} href={`/game/${gameSlug}/${slug(x)}`} className="cat-tab">{x}</Link>)}</div></div><table className="lot-table"><thead><tr><th style={{width:"24%"}}>Продавец</th><th>Товар</th><th style={{width:"12%"}}>Наличие</th><th style={{width:"14%",textAlign:"right"}}>Цена</th><th style={{width:"90px"}}/></tr></thead><tbody>{lots.map(l=><tr key={l.id}><td><div className="seller-cell"><div className="seller-avatar">K</div><div><div className="seller-name">{l.seller}</div><div className="seller-rating">★ 5.0<span className="seller-status online"/></div></div></div></td><td><Link href={`/products/${l.id}`}><div className="lot-title">{l.title}</div><div className="lot-subtitle">Быстрая передача</div></Link></td><td>{l.stock} шт.</td><td style={{textAlign:"right"}}><span className="lot-price">{l.price.toLocaleString("ru-RU")} ₽</span></td><td><Link href={`/products/${l.id}`} className="buy-btn">Открыть</Link></td></tr>)}</tbody></table></div>}
+
+async function fetchListings(categoryId: string) {
+  const url = new URL(`${API_URL}/search`)
+  url.searchParams.set("categoryId", categoryId)
+  url.searchParams.set("limit", "100")
+  url.searchParams.set("sort", "newest")
+  const res = await fetch(url.toString(), { cache: "no-store" })
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.items ?? []
+}
+
+export default async function GamePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug: gameSlug } = await params
+  const category = await fetchCategory(gameSlug)
+  if (!category) {
+    return (
+      <div>
+        <div className="breadcrumb"><Link href="/">Главная</Link><span className="breadcrumb-sep">/</span><Link href="/catalog">Все игры</Link></div>
+        <div className="page-header"><h1 className="page-title">Игра не найдена</h1></div>
+      </div>
+    )
+  }
+
+  const listings = await fetchListings(category.id)
+
+  return (
+    <div>
+      <div className="breadcrumb"><Link href="/">Главная</Link><span className="breadcrumb-sep">/</span><Link href="/catalog">Все игры</Link><span className="breadcrumb-sep">/</span><span>{category.name}</span></div>
+      <div className="page-header">
+        <div>
+          <div className="page-kicker">ИГРА</div>
+          <h1 className="page-title">{category.name}</h1>
+        </div>
+      </div>
+      <div className="cat-tabs" style={{ marginBottom: 18 }}>
+        <Link href={`/game/${gameSlug}`} className="cat-tab active">Все предложения</Link>
+        {(category.children ?? []).map((child: { slug: string; name: string }) => (
+          <Link key={child.slug} href={`/game/${gameSlug}/${child.slug}`} className="cat-tab">
+            {child.name}
+          </Link>
+        ))}
+      </div>
+      <ProductRow listings={listings} empty="В этой игре пока нет предложений." />
+    </div>
+  )
+}

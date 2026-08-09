@@ -1,4 +1,67 @@
 import Link from "next/link"
-function pretty(value:string){return value.split("-").filter(Boolean).join(" ").replace(/\b\w/g,c=>c.toUpperCase())}
-function makeLots(slug:string,category:string){return Array.from({length:8},(_,i)=>({id:`${slug}-${category}-${i+1}`,seller:`KashraSeller${i+1}`,title:`${pretty(category)} — предложение #${i+1}`,price:500+i*275,stock:3+i}))}
-export default async function GameCategoryPage({params}:{params:Promise<{slug:string;category:string}>}){const{slug,category}=await params;const game=pretty(slug);const categoryName=pretty(category);const lots=makeLots(slug,category);return <div><div className="breadcrumb"><Link href="/">Главная</Link><span className="breadcrumb-sep">/</span><Link href={`/game/${slug}`}>{game}</Link><span className="breadcrumb-sep">/</span><span>{categoryName}</span></div><div className="page-header"><div><div className="page-kicker">{game}</div><h1 className="page-title">{categoryName}</h1></div><Link href={`/game/${slug}`} className="cat-tab">Все предложения</Link></div><table className="lot-table"><thead><tr><th style={{width:"24%"}}>Продавец</th><th>Товар</th><th style={{width:"12%"}}>Наличие</th><th style={{width:"14%",textAlign:"right"}}>Цена</th><th style={{width:"90px"}}/></tr></thead><tbody>{lots.map(l=><tr key={l.id}><td><div className="seller-cell"><div className="seller-avatar">K</div><div><div className="seller-name">{l.seller}</div><div className="seller-rating">★ 5.0<span className="seller-status online"/></div></div></div></td><td><Link href={`/products/${l.id}`}><div className="lot-title">{l.title}</div><div className="lot-subtitle">{game} · {categoryName}</div></Link></td><td>{l.stock} шт.</td><td style={{textAlign:"right"}}><span className="lot-price">{l.price.toLocaleString("ru-RU")} ₽</span></td><td><Link href={`/products/${l.id}`} className="buy-btn">Открыть</Link></td></tr>)}</tbody></table></div>}
+import { ProductRow } from "@/components/ProductRow"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"
+
+async function fetchBySlug(slug: string) {
+  try {
+    const res = await fetch(`${API_URL}/categories/${slug}`, { next: { revalidate: 300 } })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
+async function fetchListings(categoryId: string) {
+  const url = new URL(`${API_URL}/search`)
+  url.searchParams.set("categoryId", categoryId)
+  url.searchParams.set("limit", "100")
+  url.searchParams.set("sort", "newest")
+  const res = await fetch(url.toString(), { cache: "no-store" })
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.items ?? []
+}
+
+export default async function GameCategoryPage({ params }: { params: Promise<{ slug: string; category: string }> }) {
+  const { slug: gameSlug, category: categorySlug } = await params
+  const game = await fetchBySlug(gameSlug)
+  const sub = await fetchBySlug(categorySlug)
+
+  if (!game || !sub) {
+    return (
+      <div>
+        <div className="breadcrumb"><Link href="/">Главная</Link><span className="breadcrumb-sep">/</span><Link href="/catalog">Все игры</Link></div>
+        <div className="page-header"><h1 className="page-title">Раздел не найден</h1></div>
+      </div>
+    )
+  }
+
+  const listings = await fetchListings(sub.id)
+
+  return (
+    <div>
+      <div className="breadcrumb">
+        <Link href="/">Главная</Link>
+        <span className="breadcrumb-sep">/</span>
+        <Link href="/catalog">Все игры</Link>
+        <span className="breadcrumb-sep">/</span>
+        <Link href={`/game/${game.slug}`}>{game.name}</Link>
+        <span className="breadcrumb-sep">/</span>
+        <span>{sub.name}</span>
+      </div>
+      <div className="page-header">
+        <div>
+          <div className="page-kicker">{game.name}</div>
+          <h1 className="page-title">{sub.name}</h1>
+        </div>
+      </div>
+      <div className="cat-tabs" style={{ marginBottom: 18 }}>
+        <Link href={`/game/${game.slug}`} className="cat-tab">Все предложения</Link>
+        <Link href={`/game/${game.slug}/${sub.slug}`} className="cat-tab active">{sub.name}</Link>
+      </div>
+      <ProductRow listings={listings} empty={`В разделе «${sub.name}» пока нет предложений.`} />
+    </div>
+  )
+}

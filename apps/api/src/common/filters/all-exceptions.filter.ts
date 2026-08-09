@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from "@nestjs/common"
 import type { FastifyReply, FastifyRequest } from "fastify"
+import { ZodError } from "zod"
 import { ApiException } from "../errors/api-error.js"
 
 @Catch()
@@ -34,6 +35,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (status >= 500) {
         this.logger.error(`${method} ${path} [${requestId}] -> ${exception.message}`)
       }
+      return
+    }
+
+    if (exception instanceof ZodError) {
+      const issues = exception.issues.map((i) => `${i.path.length ? i.path.join(".") : "(root)"}: ${i.message}`).join("; ")
+      reply.status(400).send({ error: { code: "VALIDATION_ERROR", message: `Неверные данные: ${issues}`, issues: exception.issues } })
+      this.logger.error(`${method} ${path} [${requestId}] -> Zod: ${issues}`)
       return
     }
 

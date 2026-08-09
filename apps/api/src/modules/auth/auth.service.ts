@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { Inject, Injectable, UnauthorizedException } from "@nestjs/common"
 import { JwtService, JwtSignOptions } from "@nestjs/jwt"
 import { hash, compare } from "bcryptjs"
@@ -91,6 +92,18 @@ export class AuthService {
     await this.redis.del(`refresh:${userId}`)
   }
 
+  async logoutToken(refreshToken: string): Promise<void> {
+    let payload: JwtPayload
+    try {
+      payload = await this.jwt.verifyAsync<JwtPayload>(refreshToken, {
+        secret: this.config.JWT_REFRESH_SECRET,
+      })
+    } catch {
+      return
+    }
+    await this.redis.del(`refresh:${payload.sub}`)
+  }
+
   private async generatePair(userId: string, email: string, role: string): Promise<TokenPair> {
     const payload: JwtPayload = { sub: userId, email, role }
     const accessOptions: JwtSignOptions = {
@@ -98,11 +111,10 @@ export class AuthService {
       expiresIn: this.config.JWT_ACCESS_TTL as never,
     }
     const accessToken = await this.jwt.signAsync(payload, accessOptions)
-    const refreshOptions: JwtSignOptions = {
-      secret: this.config.JWT_REFRESH_SECRET,
-      expiresIn: this.config.JWT_REFRESH_TTL as never,
-    }
-    const refreshToken = await this.jwt.signAsync(payload, refreshOptions)
+    const refreshToken = await this.jwt.signAsync(
+      { ...payload, jti: randomUUID() },
+      { secret: this.config.JWT_REFRESH_SECRET, expiresIn: this.config.JWT_REFRESH_TTL as never },
+    )
 
     const ttl = parseDurationSeconds(this.config.JWT_REFRESH_TTL)
     await this.redis.set(`refresh:${userId}`, refreshToken, "EX", ttl)

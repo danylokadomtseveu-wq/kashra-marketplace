@@ -18,7 +18,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16),
   JWT_ACCESS_TTL: z.string().default("900s"),
   JWT_REFRESH_TTL: z.string().default("30d"),
-  COOKIE_SECURE: z.coerce.boolean().default(false),
+  COOKIE_SECURE: z.preprocess((v) => v === true || v === "true", z.boolean()).default(false),
 
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().default(600),
   RATE_LIMIT_GLOBAL_WINDOW: z.string().default("60s"),

@@ -12,8 +12,10 @@ export class FavoritesService {
       include: {
         product: {
           include: {
-            category: { select: { id: true, name: true } },
+            category: { select: { id: true, slug: true, name: true } },
             inventory: { select: { stock: true } },
+            images: { select: { id: true, url: true, alt: true, sort: true }, orderBy: { sort: "asc" } },
+            seller: { include: { user: true } },
           },
         },
       },

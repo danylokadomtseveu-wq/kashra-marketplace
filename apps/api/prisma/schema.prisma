@@ -236,6 +236,7 @@ model ProductImage {
   id        String @id @default(cuid())
   productId String
   url       String
+  key       String?
   alt       String  @default("")
   sort      Int     @default(0)
 
@@ -309,6 +310,8 @@ model Order {
   currency       String   @default("RUB") @db.VarChar(3)
   itemsSummary   Json     @default("{}")
   idempotencyKey String   @unique
+  couponCode     String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -417,15 +420,32 @@ model Favorite {
 }
 
 model Coupon {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  type      CouponType
-  value     Decimal  @db.Decimal(12, 2)
-  maxUses   Int      @default(1)
-  usedCount Int      @default(0)
-  expiresAt DateTime?
+  id           String        @id @default(cuid())
+  code         String        @unique
+  type         CouponType
+  value        Decimal       @db.Decimal(12, 2)
+  maxUses      Int           @default(1)
+  usedCount    Int           @default(0)
+  expiresAt    DateTime?
+  minAmount    Decimal?      @db.Decimal(12, 2)
+  usagePerUser Int           @default(0)
+  scope        Json          @default("{}")
+
+  usages       CouponUsage[]
 
   @@index([expiresAt])
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String
+  userId    String
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@index([userId, couponId])
 }
 
 model Promotion {

@@ -135,11 +135,14 @@ export class OrdersService {
         throw new BadRequestException({ code: "INVALID_STATUS", message: "Заказ не ожидает оплаты" })
       }
 
-      // Заморозка средств на кошельке (эскроу)
-      await this.wallet.freeze(userId, Number(order.total), orderId)
-
-      // Создание платежа
-      await this.payments.processPayment(orderId, userId, Number(order.total))
+      // Заморозка средств на кошельке (эскроу) + создание платежа
+      const payment = await this.payments.processPayment(orderId, userId, Number(order.total))
+      if (payment.status === "FAILED") {
+        throw new BadRequestException({
+          code: "INSUFFICIENT_FUNDS",
+          message: "Недостаточно средств на кошельке",
+        })
+      }
 
       await tx.outboxEvent.create({
         data: {
@@ -218,6 +221,14 @@ export class OrdersService {
           where: { productId: item.productId },
           data: { reserved: { decrement: item.qty } },
         })
+      }
+
+      if (order.status === "PAID") {
+        const paid = await tx.payment.findFirst({ where: { orderId, status: "SUCCEEDED" } })
+        if (paid) {
+          await this.wallet.unfreeze(userId, Number(paid.amount))
+          await tx.payment.update({ where: { id: paid.id }, data: { status: "REFUNDED" } })
+        }
       }
 
       await tx.inventoryReservation.updateMany({

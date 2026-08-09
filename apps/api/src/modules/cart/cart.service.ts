@@ -93,7 +93,7 @@ export class CartService {
       return this.getCart(userId, undefined)
     }
 
-    const userCart = await this.createCart(userId, undefined)
+    const userCart = await this.getCart(userId, undefined)
 
     for (const item of guestCart.items) {
       const existing = await this.prisma.cartItem.findFirst({

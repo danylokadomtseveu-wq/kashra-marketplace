@@ -8,6 +8,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
 import cors from "@fastify/cors"
 import helmet from "@fastify/helmet"
 import cookie from "@fastify/cookie"
+import multipart from "@fastify/multipart"
 import { loadConfig } from "@marketplace/config"
 import { AppModule } from "./app.module.js"
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter.js"
@@ -20,15 +21,18 @@ async function bootstrap(): Promise<void> {
       level: config.LOG_LEVEL,
     },
     trustProxy: true,
-    bodyLimit: 1_048_576,
+    bodyLimit: 15 * 1024 * 1024,
   })
 
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {
-    logger: false,
-    bufferLogs: true,
+    logger: ["error", "warn", "log", "debug"],
+    bufferLogs: false,
   })
 
   await app.register(cookie)
+  await app.register(multipart, {
+    limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+  })
   await app.register(helmet, {
     contentSecurityPolicy: false,
   })

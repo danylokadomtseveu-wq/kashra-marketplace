@@ -11,5 +11,9 @@ build
 !.env.example
 *.log
 coverage
+*.tsbuildinfo
 .DS_Store
 /tmp
+/apps/api/e2e_review.js
+/tmp_prodid.txt
+/tmp_token.txt

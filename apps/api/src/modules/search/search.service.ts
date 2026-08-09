@@ -21,9 +21,18 @@ export class SearchService {
         { description: { contains: data.q, mode: "insensitive" } },
       ]
     }
-    if (data.categoryId) where.categoryId = data.categoryId
     if (data.brandId) where.brandId = data.brandId
     if (data.sellerId) where.sellerId = data.sellerId
+    if (data.categoryId) {
+      const cat = await this.prisma.category.findUnique({ where: { id: data.categoryId }, select: { id: true } })
+      if (cat) {
+        const children = await this.prisma.category.findMany({
+          where: { parentId: cat.id, isActive: true },
+          select: { id: true },
+        })
+        where.categoryId = { in: [cat.id, ...children.map((c) => c.id)] }
+      }
+    }
     if (data.minPrice !== undefined || data.maxPrice !== undefined) {
       where.price = {
         ...(data.minPrice !== undefined && { gte: data.minPrice }),
@@ -54,7 +63,17 @@ export class SearchService {
       include: {
         category: { select: { id: true, slug: true, name: true } },
         brand: { select: { id: true, slug: true, name: true } },
-        inventory: { select: { stock: true } },
+        inventory: { select: { stock: true, reserved: true } },
+        seller: {
+          select: {
+            id: true,
+            ratingCache: true,
+            salesCount: true,
+            user: { select: { id: true, name: true } },
+            _count: { select: { products: true } },
+          },
+        },
+        _count: { select: { reviews: true } },
       },
     })
 

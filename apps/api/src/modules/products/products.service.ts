@@ -51,10 +51,22 @@ export class ProductsService {
         seller: { include: { user: { select: { id: true, name: true } } } },
       },
     })
-    if (!product || product.softDeleted) {
+    // Некоторые клиенты шлют cuid-ы (id) в роут :slug — допускаем оба идентификатора
+    const resolved = product ?? (await this.prisma.product.findUnique({
+      where: { id: slug },
+      include: {
+        category: true,
+        brand: true,
+        images: { orderBy: { sort: "asc" } },
+        variants: true,
+        inventory: true,
+        seller: { include: { user: { select: { id: true, name: true } } } },
+      },
+    }))
+    if (!resolved || resolved.softDeleted) {
       throw new NotFoundException({ code: "NOT_FOUND", message: "Товар не найден" })
     }
-    return product
+    return resolved
   }
 
   async create(sellerProfileId: string, input: ProductInput) {

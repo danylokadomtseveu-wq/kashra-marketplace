@@ -22,8 +22,8 @@ export class ReviewsController {
     @Param("productId") productId: string,
     @Body() body: unknown,
   ) {
-    const data = reviewSchema.parse({ ...(body as object), productId }) as { productId: string; rating: number; text: string }
-    return this.reviews.create(userId, data)
+    const data = reviewSchema.parse(body as object) as { rating: number; text: string }
+    return this.reviews.create(userId, { productId, ...data })
   }
 
   @Delete(":reviewId")

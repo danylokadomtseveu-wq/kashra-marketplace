@@ -1,23 +1,24 @@
 import Link from "next/link"
-import type { Game } from "@/data/games"
+import type { Category } from "@/lib/types"
 
-function slugify(value: string): string {
-  return value.toLowerCase().replace(/['’&:]/g, "").replace(/[^a-z0-9а-яё]+/gi, "-").replace(/^-+|-+$/g, "")
-}
-
-export function GameItem({ game }: { game: Game }) {
-  const gameSlug = slugify(game.name)
+export function GameItem({ category }: { category: Category }) {
+  const count = category._count?.products ?? 0
   return (
     <div className="promo-game-item">
       <div className="game-title">
-        <Link href={`/game/${gameSlug}`}>{game.name}</Link>
+        <Link href={`/game/${category.slug}`}>{category.name}</Link>
       </div>
       <ul className="game-links">
-        {game.links.map((link) => (
-          <li key={link}>
-            <Link href={`/game/${gameSlug}/${slugify(link)}`}>{link}</Link>
+        {(category.children ?? []).slice(0, 5).map((child) => (
+          <li key={child.id}>
+            <Link href={`/game/${category.slug}/${child.slug}`}>{child.name}</Link>
           </li>
         ))}
+        <li>
+          <Link href={`/catalog?categoryId=${category.id}`}>
+            {count > 0 ? `Предложений: ${count}` : "Нет предложений"}
+          </Link>
+        </li>
       </ul>
     </div>
   )

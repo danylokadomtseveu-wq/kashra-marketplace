@@ -92,6 +92,13 @@ export const checkoutSchema = z.object({
   idempotencyKey: z.string().min(8).max(128),
   addressId: z.string().nullable().optional(),
   itemIds: z.array(z.string()).optional(),
+  couponCode: z.string().trim().toUpperCase().max(64).optional(),
+})
+
+export const couponValidateContextSchema = z.object({
+  code: z.string().trim().min(1).max(64),
+  cartTotal: z.coerce.number().nonnegative().optional(),
+  itemIds: z.array(z.string()).optional(),
 })
 
 export const reviewSchema = z.object({

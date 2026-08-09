@@ -1,0 +1,1 @@
+-- add optional object key (S3 key) to allow deletion without parsing urlALTER TABLE "ProductImage" ADD COLUMN     "key" TEXT;

@@ -4,7 +4,11 @@ import type { Order } from "./types"
 export interface CheckoutInput {
   idempotencyKey: string
   addressId?: string | null
+  productId?: string
+  variantId?: string | null
+  qty?: number
   itemIds?: string[]
+  couponCode?: string
 }
 
 export async function listOrders(): Promise<Order[]> {

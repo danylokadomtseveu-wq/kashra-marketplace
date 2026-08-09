@@ -27,24 +27,21 @@ export function Footer() {
         <div className="footer-links">
           <div>
             <div className="footer-heading">Покупателям</div>
-            <Link href="/help">Гарантии</Link>
-            <Link href="/help">Безопасность</Link>
-            <Link href="/catalog">Как купить</Link>
-            <Link href="/reviews">Отзывы</Link>
+            <Link href="/catalog">Каталог</Link>
+            <Link href="/orders">Покупки</Link>
+            <Link href="/profile">Профиль</Link>
           </div>
           <div>
             <div className="footer-heading">Продавцам</div>
-            <Link href="/sell">Как продавать</Link>
-            <Link href="/help">Правила</Link>
-            <Link href="/profile">Рейтинг продавцов</Link>
-            <Link href="/balance">Выплаты</Link>
+            <Link href="/sell">Продажи</Link>
+            <Link href="/profile">Профиль продавца</Link>
+            <Link href="/balance">Финансы</Link>
           </div>
           <div>
-            <div className="footer-heading">О проекте</div>
-            <Link href="/about">О нас</Link>
-            <Link href="/contacts">Контакты</Link>
-            <Link href="/news">Новости</Link>
-            <Link href="/support">Сотрудничество</Link>
+            <div className="footer-heading">KASHRA</div>
+            <Link href="/">Главная</Link>
+            <Link href="/messages">Сообщения</Link>
+            <Link href="/balance">Баланс</Link>
           </div>
         </div>
 
@@ -52,8 +49,7 @@ export function Footer() {
           <Link href="/" className="footer-brand">KASHRA</Link>
           <p>Маркетплейс игровых товаров и услуг</p>
           <p>© 2026 KASHRA. Все права защищены.</p>
-          <Link href="/terms">Пользовательское соглашение</Link>
-          <Link href="/privacy">Политика конфиденциальности</Link>
+          <p>Покупатель и продавец — один аккаунт.</p>
         </div>
       </div>
     </footer>

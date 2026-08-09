@@ -32,13 +32,7 @@ export function Navigation() {
     setMenuOpen(true)
     if (status !== "authenticated" || recent.length) return
     setRecentLoading(true)
-    try {
-      setRecent((await listNotifications()).slice(0, 8))
-    } catch {
-      setRecent([])
-    } finally {
-      setRecentLoading(false)
-    }
+    try { setRecent((await listNotifications()).slice(0, 8)) } catch { setRecent([]) } finally { setRecentLoading(false) }
   }
 
   async function markRead(notification: Notification) {
@@ -81,10 +75,7 @@ export function Navigation() {
               <li className="nav-item"><Link href="/balance">Финансы</Link></li>
               <li className="nav-item nav-meta"><Link href="/balance" className="header-meta">{balance !== null ? `${balance} ₽` : "Баланс"}</Link></li>
               <li className="nav-item nav-meta">
-                <button type="button" className="header-meta nav-bell" aria-label="Уведомления" aria-expanded={menuOpen} onClick={() => void (menuOpen ? setMenuOpen(false) : openMenu())}>
-                  ♢
-                  {unread > 0 ? <span className="nav-badge">{unread > 9 ? "9+" : unread}</span> : null}
-                </button>
+                <button type="button" className="header-meta nav-bell" aria-label="Уведомления" aria-expanded={menuOpen} onClick={() => void (menuOpen ? setMenuOpen(false) : openMenu())}>♢{unread > 0 ? <span className="nav-badge">{unread > 9 ? "9+" : unread}</span> : null}</button>
                 {menuOpen ? (
                   <div className="nav-notif-panel" onMouseLeave={() => setMenuOpen(false)}>
                     {recentLoading ? <div className="nav-notif-item">Загрузка…</div> : recent.length === 0 ? <div className="nav-notif-item nav-notif-empty">Нет уведомлений</div> : recent.map((notification) => (
@@ -99,6 +90,7 @@ export function Navigation() {
                 ) : null}
               </li>
               <li className="nav-item nav-avatar"><Link href="/profile" className="seller-avatar" aria-label={`Профиль: ${user?.name ?? ""}`}>{initial}</Link></li>
+              <li className="nav-item"><button type="button" className="header-meta" onClick={handleLogout}>Выйти</button></li>
             </>
           ) : (
             <>
